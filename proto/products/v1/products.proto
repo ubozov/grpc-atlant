@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package products.v1;
+
+option go_package = "github.com/ubozov/grpc-atlant/proto/products/v1;productspb";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+message FetchRequest {
+    string url = 1;
+}
+
+message ListRequest {
+    message PagingParam {
+        string startToken = 1;
+        int32 pageSize = 2;
+    }
+    message SortingParam {
+        string columnName = 1;
+        string orderType = 2;
+    }
+    PagingParam pagingParam = 1;
+    repeated SortingParam sortingParams = 2;
+}
+
+message ListResponse {
+    message PagingCursor {
+        string beforeToken = 1;
+        bool hasBefore = 2;
+        string afterToken = 3;
+        bool hasAfter = 4;
+    }
+    message Product {
+        string name = 1;
+        double price = 2;
+        int32 changedCount = 3;
+        google.protobuf.Timestamp changedDate = 4;
+    }
+    PagingCursor pagingCursor = 1;
+    repeated Product products = 2;
+}
+
+service ProductService {
+    rpc Fetch(FetchRequest) returns (google.protobuf.Empty);
+    rpc List(ListRequest) returns (ListResponse);
+}
