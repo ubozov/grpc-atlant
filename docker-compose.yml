@@ -1,0 +1,51 @@
+version: "3.9"
+
+services:
+  # mongodb
+  mongo:
+    image: mongo
+    restart: always
+    env_file:
+     - .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${DB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${DB_PASSWORD}
+      MONGO_INITDB_DATABASE: ${DB_NAME}
+    volumes:
+      - './.docker/mongo/data/db:/data/db'
+      - ./conf/mongo/:/docker-entrypoint-initdb.d/
+
+  # mongo-express
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    env_file:
+     - .env
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${DB_USER}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${DB_PASSWORD}
+    depends_on:
+      - mongo
+
+  ## grpc_server
+  #grpc_server:
+  #  build: .
+  #  ports: 
+  #    - "10000:10000"
+
+  ## nginx
+  # nginx:
+  #   image: nginx
+  #   volumes:
+  #     - ./conf/nginx.conf:/etc/nginx.conf:ro
+  #   depends_on:
+  #     - grpc-server
+  #   ports:
+  #     - "4000:4000"
+
+networks:
+  default:
+    driver: bridge
+    name: grpc_server
