@@ -1,37 +1,60 @@
 package main
 
 import (
+	"context"
 	"io/ioutil"
-	"net"
 	"os"
+	"time"
 
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
-	"google.golang.org/grpc/reflection"
 
+	"github.com/joho/godotenv"
+
+	"github.com/ubozov/grpc-atlant/data"
 	"github.com/ubozov/grpc-atlant/products"
-	pb "github.com/ubozov/grpc-atlant/proto/products/v1"
 )
 
-func main() {
+type config struct {
+	db   *data.Config
+	addr string
+}
 
+func getConfig() (*config, error) {
+
+	if err := godotenv.Load(); err != nil {
+		return nil, err
+	}
+
+	return &config{
+		addr: os.Getenv("HOST") + ":" + os.Getenv("PORT"),
+		db: &data.Config{
+			DBName:   os.Getenv("DB_NAME"),
+			User:     os.Getenv("DB_USER"),
+			Password: os.Getenv("DB_PASSWORD"),
+		},
+	}, nil
+}
+
+func main() {
 	log := grpclog.NewLoggerV2(os.Stdout, ioutil.Discard, ioutil.Discard)
 	grpclog.SetLoggerV2(log)
 
-	listener, err := net.Listen("tcp", ":10000")
+	conf, err := getConfig()
 	if err != nil {
-		log.Fatalln("Failed to create listener:", err)
+		log.Fatalln("Failed to read .env:", err)
 	}
 
-	var opts []grpc.ServerOption
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	srv := grpc.NewServer(opts...)
-	pb.RegisterProductServiceServer(srv, &products.Service{})
-	reflection.Register(srv)
-
-	log.Infoln("Serving gRPC on:", listener.Addr().String())
-	err = srv.Serve(listener)
+	db, err := data.NewDB(ctx, *conf.db)
 	if err != nil {
+		log.Fatalln("Failed to connect to the database:", err)
+	}
+	defer db.Close(ctx)
+
+	service := products.NewService(db, log)
+	if err != service.Start(conf.addr) {
 		log.Fatalln("Failed to serve:", err)
 	}
 }
