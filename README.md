@@ -1,43 +1,52 @@
 # grpc-atlant
 
+Used tools:
+- golang
+- grpc
+- protobuf
+- mongodb
+- nginx
+- mongo-express
+- docker
+- docker-compose
+
 ## Build
 
 ### Deleloping
-Envirolment variables avialable on [.env.dev](.env.dev) file
+Envirolment variables are avialable on [.env.dev](.env.dev) file
 
-For run on developer mode execute below command:
+The command below launches the `mongodb`, `mongo-express` on docker container and grpc-server at `localhost:10000`:
 ```
 make run
 ```
-MongoDB and MongoDB-Express run on the docker containers.
+The `mongo-epxress` is avialable at `localhost:8081`.
 
 ### Deployment
-Envirolment variables avialable on [.env](.env) file.
-Ngninx configuration file avialable on `conf/nginx.conf`
+Envirolment variables are avialable on [.env](.env) file.
+The `nginx` configuration file available on `conf/nginx.conf`
 
 Below command deploys and runs all environment on the local docker host:
 ```
 make deploy
 ```
 
-Set SCALE parameter (by default is 2) to scaling grpc server instance. For example:
+Set SCALE parameter (by default is 2) to scaling grpc-server instance. For example:
 ```
 make deploy SCALE=5
 ```
+The `mongo-express` is avialable at `localhost:8081`.
+
+The `nginx` available on the `localhost:1000` and upstreams all traffic between deployed grpc-servers instances.
 
 ## Usage
 ### Pagination
-| Command | Description | Default |
+| Parameter | Description | Default |
 | --- | --- | --- |
 | `token` | *columnName_value_RecordID* (for example `price_34.1_6042fac29124f581b23467e2`) | empty
 | `limit` | sets the limit of records per page | returns all records
 ### Sorting
-| Command | Description | Default |
+| Parameter | Description | Default |
 | --- | --- | --- |
 | `columnName` | **_id**, **name**, **price**, **counter** or **lastModified** | **_id**
 | `orderType` | **ASC** or **DESC** | **ASC**
-
-
-
-
 
