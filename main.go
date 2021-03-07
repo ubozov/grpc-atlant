@@ -8,10 +8,8 @@ import (
 
 	"google.golang.org/grpc/grpclog"
 
-	"github.com/joho/godotenv"
-
 	"github.com/ubozov/grpc-atlant/data"
-	"github.com/ubozov/grpc-atlant/products"
+	"github.com/ubozov/grpc-atlant/grpc/server"
 )
 
 type config struct {
@@ -20,14 +18,11 @@ type config struct {
 }
 
 func getConfig() (*config, error) {
-
-	if err := godotenv.Load(); err != nil {
-		return nil, err
-	}
-
 	return &config{
 		addr: os.Getenv("HOST") + ":" + os.Getenv("PORT"),
 		db: &data.Config{
+			Host:     os.Getenv("DB_HOST"),
+			Port:     os.Getenv("DB_PORT"),
 			DBName:   os.Getenv("DB_NAME"),
 			User:     os.Getenv("DB_USER"),
 			Password: os.Getenv("DB_PASSWORD"),
@@ -53,8 +48,7 @@ func main() {
 	}
 	defer db.Close(ctx)
 
-	service := products.NewService(db, log)
-	if err != service.Start(conf.addr) {
+	if err != server.Start(db, log, conf.addr) {
 		log.Fatalln("Failed to serve:", err)
 	}
 }

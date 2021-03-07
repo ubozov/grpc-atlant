@@ -11,6 +11,8 @@ import (
 
 // Config has a database connection configuration.
 type Config struct {
+	Host     string
+	Port     string
 	DBName   string
 	User     string
 	Password string
@@ -24,7 +26,8 @@ type DB struct {
 
 // NewDB creates a new data connection handle.
 func NewDB(ctx context.Context, conf Config) (*DB, error) {
-	conn := fmt.Sprintf("mongodb://%s:%s@localhost:27017/%s", conf.User, conf.Password, conf.DBName)
+	conn := fmt.Sprintf("mongodb://%s:%s@%s:%s/%s",
+		conf.User, conf.Password, conf.Host, conf.Port, conf.DBName)
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(conn))
 	if err == nil {

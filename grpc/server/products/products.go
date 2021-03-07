@@ -3,7 +3,6 @@ package products
 import (
 	"context"
 	"fmt"
-	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -11,9 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
-	"google.golang.org/grpc/reflection"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -43,29 +40,10 @@ func NewService(db *data.DB, logger grpclog.LoggerV2) *Service {
 	}
 }
 
-// Start ...
-func (s *Service) Start(addr string) error {
-	listener, err := net.Listen("tcp", addr)
-	if err != nil {
-		return err
-	}
-
-	var opts []grpc.ServerOption
-
-	srv := grpc.NewServer(opts...)
-
-	proto.RegisterProductServiceServer(srv, s)
-	reflection.Register(srv)
-
-	s.logger.Infoln("Serving gRPC on:", listener.Addr().String())
-
-	return srv.Serve(listener)
-}
-
 // Fetch ...
 func (s *Service) Fetch(ctx context.Context, request *proto.FetchRequest) (*emptypb.Empty, error) {
-	//data, err := readCSVFromURL(request.Url)
-	data, err := readCSVFromFile("./product.csv")
+	data, err := readCSVFromURL(request.Url)
+	//data, err := readCSVFromFile("./product.csv")
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +72,7 @@ func fetch(ctx context.Context, db *data.DB, data [][]string) error {
 				{"name", row[0]},
 			},
 			bson.D{
-				{"$set", bson.D{{"price", price}}}, //, {"lastModified", timestamppb.Now()}}},
+				{"$set", bson.D{{"price", price}}},
 				{"$currentDate", bson.D{{"lastModified", true}}},
 				{"$inc", bson.M{"counter": 1}},
 			},
@@ -112,7 +90,7 @@ func (s *Service) List(request *proto.ListRequest, stream proto.ProductService_L
 
 	ctx := context.Background()
 
-	opts, filter, err := getSortAndPaginagionParams(request.PagingParam.Token, request.PagingParam.Limit,
+	opts, filter, err := getSortAndPaginagionOptions(request.PagingParam.Token, request.PagingParam.Limit,
 		request.SortingParam.ColumnName, request.SortingParam.OrderType)
 	if err != nil {
 		return err
@@ -146,7 +124,7 @@ func (s *Service) List(request *proto.ListRequest, stream proto.ProductService_L
 	return cursor.Err()
 }
 
-func getSortAndPaginagionParams(token string, limit int64, column string,
+func getSortAndPaginagionOptions(token string, limit int64, column string,
 	order string) (options.FindOptions, interface{}, error) {
 	opts := options.FindOptions{
 		Limit: &limit,
@@ -168,7 +146,7 @@ func getSortAndPaginagionParams(token string, limit int64, column string,
 	if token != "" {
 		s := strings.Split(token, "_")
 		if len(s) != 3 {
-			return opts, nil, fmt.Errorf("incorrect pagenation token")
+			return opts, nil, fmt.Errorf("incorrect pagination token")
 		}
 
 		switch s[0] {
@@ -187,4 +165,9 @@ func getSortAndPaginagionParams(token string, limit int64, column string,
 	}
 
 	return opts, filter, nil
+}
+
+// Log ...
+func (s Service) Log(args ...interface{}) {
+	s.logger.Infoln(args...)
 }
