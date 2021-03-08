@@ -9,6 +9,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -43,7 +44,7 @@ func NewService(db *data.DB, logger grpclog.LoggerV2) *Service {
 // Fetch ...
 func (s *Service) Fetch(ctx context.Context, request *proto.FetchRequest) (*emptypb.Empty, error) {
 	data, err := readCSVFromURL(request.Url)
-	//data, err := readCSVFromFile("./product.csv")
+	//data, err := readCSVFromFile("./grpc/server/products/product.csv")
 	if err != nil {
 		return nil, err
 	}
@@ -66,11 +67,22 @@ func fetch(ctx context.Context, db *data.DB, data [][]string) error {
 			return err
 		}
 
+		filter := bson.D{{"name", row[0]}}
+
+		var p product
+		err = coll.FindOne(ctx, filter).Decode(&p)
+
+		if err != nil {
+			if err != mongo.ErrNoDocuments {
+				return err
+			}
+		} else if p.Price == price {
+			continue
+		}
+
 		if _, err := coll.UpdateOne(
 			ctx,
-			bson.D{
-				{"name", row[0]},
-			},
+			filter,
 			bson.D{
 				{"$set", bson.D{{"price", price}}},
 				{"$currentDate", bson.D{{"lastModified", true}}},
