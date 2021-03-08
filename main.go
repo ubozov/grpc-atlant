@@ -19,7 +19,7 @@ type config struct {
 
 func getConfig() (*config, error) {
 	return &config{
-		addr: os.Getenv("HOST") + ":" + os.Getenv("PORT"),
+		addr: os.Getenv("GRPC_HOST") + ":" + os.Getenv("GRPC_PORT"),
 		db: &data.Config{
 			Host:     os.Getenv("DB_HOST"),
 			Port:     os.Getenv("DB_PORT"),

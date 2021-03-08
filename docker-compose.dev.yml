@@ -5,9 +5,9 @@ services:
     image: mongo
     restart: always
     ports:
-      - 27017:27017
+      - ${DB_PORT}:27017
     env_file:
-     - .env.dev
+      - .env.dev
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${DB_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${DB_PASSWORD}
