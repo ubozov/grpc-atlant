@@ -72,10 +72,12 @@ func fetch(ctx context.Context, db *data.DB, data [][]string) error {
 		var p product
 		err = coll.FindOne(ctx, filter).Decode(&p)
 
+		op, inc := "$inc", 1
 		if err != nil {
 			if err != mongo.ErrNoDocuments {
 				return err
 			}
+			op, inc = "$set", 0
 		} else if p.Price == price {
 			continue
 		}
@@ -86,7 +88,7 @@ func fetch(ctx context.Context, db *data.DB, data [][]string) error {
 			bson.D{
 				{"$set", bson.D{{"price", price}}},
 				{"$currentDate", bson.D{{"lastModified", true}}},
-				{"$inc", bson.M{"counter": 1}},
+				{op, bson.M{"counter": inc}},
 			},
 			opts,
 		); err != nil {
